@@ -1,0 +1,56 @@
+# This Job, change and fix the pulsar dashboard login issue with the default setup Pulsar Manager UI Superuser
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    app: pulsar
+    component: pulsar-manager
+  name: pulsar-manager-init
+  namespace: default
+spec:
+  backoffLimit: 6
+  completions: 1
+  parallelism: 1
+  template:
+    metadata:
+      labels:
+        job-name: pulsar-manager-init
+    spec:
+      containers:
+      - args:
+        - "apk add curl; curl -H \"Content-Type: application/json\" \\\n     -X PUT
+          \\\n     http://pulsar-manager-backend:7750/pulsar-manager/users/superuser 
+          \\\n     -d '{\"name\": \"pulsar\", \"password\": \"pulsar\",
+          \"description\": \"Pulsar Manager Admin\", \"email\": \"support@pulsar.io\"}'
+          \n"
+        command:
+        - sh
+        - -c
+        image: streamnative/pulsar-manager:0.3.0
+        imagePullPolicy: IfNotPresent
+        name: pulsar-init
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      initContainers:
+      - args:
+        - |
+          pmServiceNumber="$(nslookup -timeout=10 pulsar-manager-backend | grep Name | wc -l)"; until [ ${pmServiceNumber} -ge 1 ]; do
+            echo "Pulsar Manager cluster isn't ready yet ... check in 10 seconds ...";
+            sleep 10;
+            pmServiceNumber="$(nslookup -timeout=10 pulsar-manager-backend | grep Name | wc -l)";
+          done; echo "Pulsar Manager cluster is ready";
+        command:
+        - sh
+        - -c
+        image: streamnative/pulsar-all:2.6.0-sn-21
+        imagePullPolicy: IfNotPresent
+        name: wait-pulsar-manager-ready
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      restartPolicy: Never
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
