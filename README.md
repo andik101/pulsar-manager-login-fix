@@ -10,9 +10,9 @@ This repo maintains the configuration file for **pulsar manager version 0.3.0**,
 
 
 
-## Installing the UI Superuser `pulsar`
+## Deploying the UI Superuser `pulsar`
 
-To install in kubernetes cluster:
+To deploy it run the following command:
 
 ```bash
 $ kubectl apply -f pulsar-manager-superuser-job.yaml
